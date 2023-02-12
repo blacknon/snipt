@@ -1,0 +1,10 @@
+name : snipt
+cmdname : snipt
+summary : multiple remote platform snippet-code manager command.
+description : multiple remote platform snippet-code manager command.
+version : ___VERSION___
+changelog : See https://github.com/blacknon/snipt/releases
+url : https://github.com/blacknon/snipt
+author : blacknon
+email : blacknon@orebibou.com
+libdir : null
