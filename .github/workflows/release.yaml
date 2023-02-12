@@ -71,6 +71,7 @@ jobs:
           ## mkdir -p package/man
           ## cp man/snipt.1 package/man
           # cp -r completion package/
+          cp -r package/
           ## sed -i is not used due to difference between macOS and Linux
           perl -i -pe s/___VERSION___/${{ steps.package_version.outputs.version }}/ ./package/.tar2package.yml
           ## tar czvf "$_TAR" -C "$PWD/package" completion bin man .tar2package.yml
