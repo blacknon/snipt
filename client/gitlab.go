@@ -35,6 +35,7 @@ func (g *GitlabClient) Init(u, token string) (err error) {
 	// create ctx
 	g.ctx = context.Background()
 
+	// TODO: proxyを設定できるように修正する(↓はテスト時のコードなので少し残しておく)
 	// Create http client
 	// h := &http.Client{
 	// 	Transport: &http.Transport{
