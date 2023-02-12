@@ -148,13 +148,6 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - name: Get version
-        id: package_version
-        shell: bash
-        run: |
-          VERSION="$(go run ./ --version | awk '{print $NF}')"
-          echo "::set-output name=version::$VERSION"
-
       - id: create-release
         uses: actions/create-release@v1
         env:
@@ -218,6 +211,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.upload-url.outputs.url }}
-          asset_path: ./build-${{ matrix.goos }}_${{ matrix.goarch }}/snipt_${{ needs.create-release.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
-          asset_name: snipt_${{ needs.create-release.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
+          asset_path: ./build-${{ matrix.goos }}_${{ matrix.goarch }}/snipt_${{ steps.package_version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
+          asset_name: snipt_${{ steps.package_version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
           asset_content_type: application/octet-stream
