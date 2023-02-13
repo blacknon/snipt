@@ -16,7 +16,7 @@ import (
 var App = &cli.App{
 	Name:      "snipt",
 	Usage:     "multiple remote platform snippet manager.",
-	Version:   "0.1.0",
+	Version:   "0.1.1",
 	ErrWriter: ioutil.Discard,
 
 	// Flags
