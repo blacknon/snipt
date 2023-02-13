@@ -49,13 +49,13 @@ func (g *GitlabClient) Init(u, token string) (err error) {
 	// 	},
 	// 	Timeout: 3000 * time.Millisecond,
 	// }
-	// proxyUrl, err := url.Parse("http://127.0.0.1:8080")
-	// h := &http.Client{
-	// 	Transport: &http.Transport{
-	// 		Proxy: http.ProxyURL(proxyUrl),
-	// 	},
-	// }
-	h := &http.Client{}
+	proxyUrl, err := url.Parse("http://127.0.0.1:8080")
+	h := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		},
+	}
+	// h := &http.Client{}
 
 	// Create Gitlab Client
 	g.client, err = gitlab.NewClient(token, gitlab.WithBaseURL(u), gitlab.WithHTTPClient(h))
@@ -213,25 +213,33 @@ func (g *GitlabClient) Create(data SnippetData) (snippet SnippetClient, err erro
 	visibility := getGitlabVisibility(data.Visibility)
 
 	if g.Project == nil {
-		// create createOpt
-		opt := &gitlab.CreateSnippetOptions{
-			Title:       gitlab.String(data.Title),
-			Description: gitlab.String(data.Description),
-			Visibility:  gitlab.Visibility(visibility),
-			FileName:    &fileName,
-			Content:     &contents,
-			Files:       &files,
+		// create opt
+		opt := &gitlab.CreateSnippetOptions{}
+		opt.Title = gitlab.String(data.Title)
+		opt.Description = gitlab.String(data.Description)
+		opt.Visibility = gitlab.Visibility(visibility)
+
+		if len(files) > 1 {
+			opt.Files = &files
+		} else {
+			opt.FileName = &fileName
+			opt.Content = &contents
 		}
 
 		snippet, _, err = g.client.Snippets.CreateSnippet(opt)
+
 	} else {
-		opt := &gitlab.CreateProjectSnippetOptions{
-			Title:       gitlab.String(data.Title),
-			Description: gitlab.String(data.Description),
-			Visibility:  gitlab.Visibility(visibility),
-			FileName:    &fileName,
-			Content:     &contents,
-			Files:       &files,
+		// create opt
+		opt := &gitlab.CreateProjectSnippetOptions{}
+		opt.Title = gitlab.String(data.Title)
+		opt.Description = gitlab.String(data.Description)
+		opt.Visibility = gitlab.Visibility(visibility)
+
+		if len(files) > 1 {
+			opt.Files = &files
+		} else {
+			opt.FileName = &fileName
+			opt.Content = &contents
 		}
 
 		snippet, _, err = g.client.ProjectSnippets.CreateSnippet(g.Project.ID, opt)
@@ -258,6 +266,7 @@ func (g *GitlabClient) Update(id string, data SnippetData) (snippet SnippetClien
 		// create createOpt
 		opt := &gitlab.UpdateSnippetOptions{}
 		opt.Title = gitlab.String(data.Title)
+		opt.Description = gitlab.String(data.Description)
 		opt.Visibility = &visibility
 
 		if len(files) > 1 {
@@ -271,6 +280,7 @@ func (g *GitlabClient) Update(id string, data SnippetData) (snippet SnippetClien
 	} else {
 		opt := &gitlab.UpdateProjectSnippetOptions{}
 		opt.Title = gitlab.String(data.Title)
+		opt.Description = gitlab.String(data.Description)
 		opt.Visibility = &visibility
 
 		if len(files) > 1 {
