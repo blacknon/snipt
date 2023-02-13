@@ -13,6 +13,7 @@ on:
   push:
     branches:
       - master
+      - develop
 
 jobs:
   # build rust binary
@@ -41,6 +42,8 @@ jobs:
             os: windows-latest
             ext: zip
     runs-on: ${{ matrix.os }}
+    outputs:
+      version: ${{ steps.package_version.outputs.version }}
     steps:
       - uses: actions/checkout@v1
 
@@ -59,7 +62,6 @@ jobs:
       - name: Build binary
         run: |
           go build -o snipt.${{ matrix.goos }}_${{ matrix.goarch }} ./
-
 
       - name: Create package file
         if: ${{ (matrix.ext == 'tar.gz') || (matrix.ext == 'rpm') || (matrix.ext == 'deb') }}
@@ -148,6 +150,13 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
+      - name: Set version
+        id: package_version
+        shell: bash
+        run: |
+          VERSION=${{ needs.build.outputs.version }}
+          echo "::set-output name=version::$VERSION"
+
       - id: create-release
         uses: actions/create-release@v1
         env:
@@ -190,8 +199,7 @@ jobs:
             goarch: amd64
             os: windows-latest
             ext: zip
-
-    needs: [create-release]
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v1
@@ -211,6 +219,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.upload-url.outputs.url }}
-          asset_path: ./build-${{ matrix.goos }}_${{ matrix.goarch }}/snipt_${{ steps.package_version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
-          asset_name: snipt_${{ steps.package_version.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
+          asset_path: ./build-${{ matrix.goos }}_${{ matrix.goarch }}/snipt_${{ needs.create-release.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
+          asset_name: snipt_${{ needs.create-release.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.ext }}
           asset_content_type: application/octet-stream
