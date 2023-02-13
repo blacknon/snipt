@@ -49,13 +49,13 @@ func (g *GitlabClient) Init(u, token string) (err error) {
 	// 	},
 	// 	Timeout: 3000 * time.Millisecond,
 	// }
-	proxyUrl, err := url.Parse("http://127.0.0.1:8080")
-	h := &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(proxyUrl),
-		},
-	}
-	// h := &http.Client{}
+	// proxyUrl, err := url.Parse("http://127.0.0.1:8080")
+	// h := &http.Client{
+	// 	Transport: &http.Transport{
+	// 		Proxy: http.ProxyURL(proxyUrl),
+	// 	},
+	// }
+	h := &http.Client{}
 
 	// Create Gitlab Client
 	g.client, err = gitlab.NewClient(token, gitlab.WithBaseURL(u), gitlab.WithHTTPClient(h))
