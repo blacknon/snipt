@@ -78,12 +78,12 @@ func (g *GistClient) List(isFile, isSecret bool) (snippetList SnippetList, err e
 		}
 
 		data := SnippetListData{
-			Client:      g,
-			Platform:    g.PlatformName,
-			Id:          gist.GetID(),
-			Description: description,
-			URL:         gist.GetHTMLURL(),
-			Visibility:  visibility,
+			Client:     g,
+			Platform:   g.PlatformName,
+			Id:         gist.GetID(),
+			Title:      description,
+			URL:        gist.GetHTMLURL(),
+			Visibility: visibility,
 		}
 
 		if isFile {
@@ -130,6 +130,8 @@ func (g *GistClient) Get(id string) (data SnippetData, err error) {
 		Files:      files,
 	}
 
+	fmt.Println("debug. gist description:", data.Title)
+
 	return
 }
 
@@ -153,7 +155,7 @@ func (g *GistClient) Create(data SnippetData) (gist SnippetClient, err error) {
 	gist, _, err = g.client.Gists.Create(
 		g.ctx,
 		&github.Gist{
-			Description: &data.Description,
+			Description: &data.Title,
 			Files:       files,
 			Public:      &isPublic,
 		})
@@ -177,7 +179,7 @@ func (g *GistClient) Update(id string, data SnippetData) (gist SnippetClient, er
 		g.ctx,
 		id,
 		&github.Gist{
-			Description: &data.Description,
+			Description: &data.Title,
 			Files:       files,
 			Public:      &isPublic,
 		})

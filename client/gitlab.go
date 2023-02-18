@@ -96,15 +96,15 @@ func (g *GitlabClient) List(isFile, isSecret bool) (snippetList SnippetList, err
 		}
 
 		// get Description
-		description := replaceNewline(snippet.Title, "\\n")
+		title := replaceNewline(snippet.Title, "\\n")
 
 		data := SnippetListData{
-			Client:      g,
-			Platform:    g.PlatformName,
-			Id:          strconv.Itoa(snippet.ID),
-			Description: description,
-			URL:         snippet.WebURL,
-			Visibility:  snippet.Visibility,
+			Client:     g,
+			Platform:   g.PlatformName,
+			Id:         strconv.Itoa(snippet.ID),
+			Title:      title,
+			URL:        snippet.WebURL,
+			Visibility: snippet.Visibility,
 		}
 
 		// check file flag

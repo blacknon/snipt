@@ -69,7 +69,7 @@ func cmdActionUpdate(c *cli.Context) (err error) {
 	// Create list
 	var filterText string
 	for _, l := range list {
-		t := fmt.Sprintln(l.URL, l.Platform, l.Description)
+		t := fmt.Sprintln(l.URL, l.Platform, l.Title)
 		filterText += t
 	}
 
@@ -95,10 +95,14 @@ func cmdActionUpdate(c *cli.Context) (err error) {
 			return err
 		}
 
+		fmt.Println("- 1. title: ", snippetData.Title)
+
 		// Get and Set title
 		if title != "" {
 			snippetData.Title = title
 		}
+
+		fmt.Println("- 2. title: ", snippetData.Title)
 
 		// update visibility
 		if c.Bool("visibility") {
@@ -129,6 +133,8 @@ func cmdActionUpdate(c *cli.Context) (err error) {
 			}
 		}
 		snippetData.Files = files
+
+		fmt.Println("- 3. title: ", snippetData.Title)
 
 		// update
 		rawURLs, err := cl.Update(url, snippetData)

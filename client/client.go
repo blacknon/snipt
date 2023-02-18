@@ -72,6 +72,8 @@ func (c *Client) Get(url string) (snippet SnippetData, err error) {
 
 	snippet, err = sld.Client.Get(sld.Id)
 
+	fmt.Println("debug: snippet.Title: ", snippet.Title)
+
 	return
 }
 
