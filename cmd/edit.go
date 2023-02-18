@@ -46,7 +46,7 @@ func cmdActionEdit(c *cli.Context) (err error) {
 	// Create list
 	var filterText string
 	for _, l := range list {
-		t := fmt.Sprintln(l.URL, l.Platform, l.Description)
+		t := fmt.Sprintln(l.URL, l.Platform, l.Title)
 		filterText += t
 	}
 

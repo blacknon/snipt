@@ -53,14 +53,13 @@ func (l SnippetList) Where(fn func(*SnippetListData) bool) (result SnippetList) 
 
 // SnippetList
 type SnippetListData struct {
-	Client      GitClient
-	Platform    string // platform the snippet resides on. ex) Github(hogehoge)/Gitlab(fugafuga)
-	Id          string //
-	Title       string //
-	Description string //
-	RawURL      string //
-	URL         string //
-	Visibility  string //
+	Client     GitClient
+	Platform   string // platform the snippet resides on. ex) Github(hogehoge)/Gitlab(fugafuga)
+	Id         string //
+	Title      string //
+	RawURL     string //
+	URL        string //
+	Visibility string //
 }
 
 type SnippetData struct {

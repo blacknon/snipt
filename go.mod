@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/urfave/cli/v2 v2.24.1
-	github.com/xanzy/go-gitlab v0.79.0
+	github.com/xanzy/go-gitlab v0.80.2
 	golang.org/x/oauth2 v0.4.0
 )
 
@@ -31,5 +31,3 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
-
-replace github.com/xanzy/go-gitlab v0.79.0 => github.com/blacknon/go-gitlab v0.79.999

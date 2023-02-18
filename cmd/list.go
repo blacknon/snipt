@@ -51,7 +51,7 @@ func cmdActionList(c *cli.Context) (err error) {
 			u = l.RawURL
 		}
 
-		t := fmt.Sprintln(u, l.Visibility+": "+l.Description)
+		t := fmt.Sprintln(u, l.Visibility+": "+l.Title)
 		fmt.Print(t)
 	}
 
