@@ -370,7 +370,7 @@ func (g *GitlabClient) VisibilityList() (visibilityList []Visibility) {
 }
 
 // createGistFile
-func createGitlabCreateSnippetFiles(data []SnippetFileData) (files []*gitlab.CreateSnippetFile, fileName, contents string) {
+func createGitlabCreateSnippetFiles(data []SnippetFileData) (files []*gitlab.CreateSnippetFileOptions, fileName, contents string) {
 	// set data to files
 	i := 0
 	for _, d := range data {
@@ -379,7 +379,7 @@ func createGitlabCreateSnippetFiles(data []SnippetFileData) (files []*gitlab.Cre
 		filepath := d.Path
 
 		// create gitlab.SnippetFile
-		f := gitlab.CreateSnippetFile{
+		f := gitlab.CreateSnippetFileOptions{
 			FilePath: &filepath,
 			Content:  &c,
 		}
@@ -397,7 +397,7 @@ func createGitlabCreateSnippetFiles(data []SnippetFileData) (files []*gitlab.Cre
 }
 
 // createGistFile
-func createGitlabUpdateSnippetFiles(data []SnippetFileData) (files []*gitlab.UpdateSnippetFile, fileName, contents string) {
+func createGitlabUpdateSnippetFiles(data []SnippetFileData) (files []*gitlab.UpdateSnippetFileOptions, fileName, contents string) {
 	// set data to files
 	i := 0
 	for _, d := range data {
@@ -405,7 +405,7 @@ func createGitlabUpdateSnippetFiles(data []SnippetFileData) (files []*gitlab.Upd
 		c := string(d.Contents)
 		filepath := d.Path
 
-		f := gitlab.UpdateSnippetFile{
+		f := gitlab.UpdateSnippetFileOptions{
 			Action:   gitlab.String("update"),
 			FilePath: &filepath,
 			Content:  &c,
