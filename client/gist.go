@@ -130,8 +130,6 @@ func (g *GistClient) Get(id string) (data SnippetData, err error) {
 		Files:      files,
 	}
 
-	fmt.Println("debug. gist description:", data.Title)
-
 	return
 }
 

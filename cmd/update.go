@@ -95,14 +95,10 @@ func cmdActionUpdate(c *cli.Context) (err error) {
 			return err
 		}
 
-		fmt.Println("- 1. title: ", snippetData.Title)
-
 		// Get and Set title
 		if title != "" {
 			snippetData.Title = title
 		}
-
-		fmt.Println("- 2. title: ", snippetData.Title)
 
 		// update visibility
 		if c.Bool("visibility") {
@@ -133,8 +129,6 @@ func cmdActionUpdate(c *cli.Context) (err error) {
 			}
 		}
 		snippetData.Files = files
-
-		fmt.Println("- 3. title: ", snippetData.Title)
 
 		// update
 		rawURLs, err := cl.Update(url, snippetData)
