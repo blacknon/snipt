@@ -31,7 +31,11 @@ func (c *Client) Init(conf config.Config) {
 
 	// Gitlab.Init
 	for _, gitlabConf := range conf.GitLab {
-		g := GitlabClient{}
+		g := GitlabClient{
+			proxy:     gitlabConf.Proxy,
+			proxyUser: gitlabConf.ProxyUser,
+			proxyPass: gitlabConf.ProxyPass,
+		}
 		g.Init(gitlabConf.Url, gitlabConf.AccessToken)
 
 		c.lists = append(c.lists, &g)

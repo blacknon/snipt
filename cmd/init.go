@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	// ssss
+	// config file
 	configFileName = "config.toml"
 )
 

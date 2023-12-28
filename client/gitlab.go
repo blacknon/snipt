@@ -6,6 +6,7 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -22,6 +23,11 @@ type GitlabClient struct {
 	PlatformName string
 	FilterKey    string
 	Project      *gitlab.Project
+
+	// proxy
+	proxy     string
+	proxyUser string
+	proxyPass string
 }
 
 var (
@@ -35,27 +41,22 @@ func (g *GitlabClient) Init(u, token string) (err error) {
 	// create ctx
 	g.ctx = context.Background()
 
-	// TODO: proxyを設定できるように修正する(↓はテスト時のコードなので少し残しておく)
-	// Create http client
-	// h := &http.Client{
-	// 	Transport: &http.Transport{
-	// 		DialContext: (&net.Dialer{
-	// 			Timeout:   1000 * time.Millisecond,
-	// 			KeepAlive: 1000 * time.Millisecond,
-	// 		}).DialContext,
-	// 		TLSHandshakeTimeout:   300 * time.Millisecond,
-	// 		ResponseHeaderTimeout: 300 * time.Millisecond,
-	// 		ExpectContinueTimeout: 100 * time.Millisecond,
-	// 	},
-	// 	Timeout: 3000 * time.Millisecond,
-	// }
-	// proxyUrl, err := url.Parse("http://127.0.0.1:8080")
-	// h := &http.Client{
-	// 	Transport: &http.Transport{
-	// 		Proxy: http.ProxyURL(proxyUrl),
-	// 	},
-	// }
-	h := &http.Client{}
+	transport := &http.Transport{}
+	if g.proxy != "" {
+		proxyUrl, err := url.Parse(g.proxy)
+		if err != nil {
+			return err
+		}
+
+		hdr := make(http.Header)
+		hdr.Add("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(g.proxyUser+":"+g.proxyPass)))
+
+		transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		}
+	}
+
+	h := &http.Client{Transport: transport}
 
 	// Create Gitlab Client
 	g.client, err = gitlab.NewClient(token, gitlab.WithBaseURL(u), gitlab.WithHTTPClient(h))
