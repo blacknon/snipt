@@ -44,22 +44,43 @@ func (c *Client) Init(conf config.Config) {
 }
 
 // List
-func (c *Client) List(isFile, isSecret bool) (snippetList SnippetList) {
-	//
-	for _, gc := range c.lists {
-		list, err := gc.List(isFile, isSecret)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-			continue
-		}
+func (c *Client) List(isFile, isSecret bool) SnippetList {
+	var snippetList SnippetList
+	var wg sync.WaitGroup                                 // goroutineの完了を待機するためのWaitGroup
+	resultChannel := make(chan SnippetList, len(c.lists)) // 処理結果を収集するチャネル
 
+	// 各クライアントに対してgoroutineを起動
+	for _, gc := range c.lists {
+		wg.Add(1)
+		go func(gc GitClient) {
+			defer wg.Done()
+			// クライアントのListメソッドを実行
+			list, err := gc.List(isFile, isSecret)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+				return
+			}
+
+			// 処理結果をチャネルに送信
+			resultChannel <- list
+		}(gc)
+	}
+
+	// 全てのgoroutineの完了を待機してチャネルを閉じる
+	go func() {
+		wg.Wait()
+		close(resultChannel)
+	}()
+
+	// チャネルから受け取ったリストをまとめる
+	for list := range resultChannel {
 		snippetList = append(snippetList, list...)
 	}
 
-	//
+	// filterListsDataに結果を保存
 	c.filterListsData = snippetList
 
-	return
+	return snippetList
 }
 
 // Get
