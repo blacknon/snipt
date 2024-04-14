@@ -7,6 +7,7 @@ package client
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/blacknon/snipt/config"
 	"github.com/google/go-github/github"
@@ -31,7 +32,11 @@ func (c *Client) Init(conf config.Config) {
 
 	// Gitlab.Init
 	for _, gitlabConf := range conf.GitLab {
-		g := GitlabClient{}
+		g := GitlabClient{
+			proxy:     gitlabConf.Proxy,
+			proxyUser: gitlabConf.ProxyUser,
+			proxyPass: gitlabConf.ProxyPass,
+		}
 		g.Init(gitlabConf.Url, gitlabConf.AccessToken)
 
 		c.lists = append(c.lists, &g)
@@ -39,22 +44,43 @@ func (c *Client) Init(conf config.Config) {
 }
 
 // List
-func (c *Client) List(isFile, isSecret bool) (snippetList SnippetList) {
-	//
-	for _, gc := range c.lists {
-		list, err := gc.List(isFile, isSecret)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-			continue
-		}
+func (c *Client) List(isFile, isSecret bool) SnippetList {
+	var snippetList SnippetList
+	var wg sync.WaitGroup                                 // goroutineの完了を待機するためのWaitGroup
+	resultChannel := make(chan SnippetList, len(c.lists)) // 処理結果を収集するチャネル
 
+	// 各クライアントに対してgoroutineを起動
+	for _, gc := range c.lists {
+		wg.Add(1)
+		go func(gc GitClient) {
+			defer wg.Done()
+			// クライアントのListメソッドを実行
+			list, err := gc.List(isFile, isSecret)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+				return
+			}
+
+			// 処理結果をチャネルに送信
+			resultChannel <- list
+		}(gc)
+	}
+
+	// 全てのgoroutineの完了を待機してチャネルを閉じる
+	go func() {
+		wg.Wait()
+		close(resultChannel)
+	}()
+
+	// チャネルから受け取ったリストをまとめる
+	for list := range resultChannel {
 		snippetList = append(snippetList, list...)
 	}
 
-	//
+	// filterListsDataに結果を保存
 	c.filterListsData = snippetList
 
-	return
+	return snippetList
 }
 
 // Get
@@ -136,55 +162,93 @@ func (c *Client) Delete(url string) (err error) {
 }
 
 // PlatformList
-func (c *Client) PlatformList(enableProject bool) (platformList []string, err error) {
+func (c *Client) PlatformList(enableProject bool) ([]string, error) {
+	var platformList []string
+	var err error
+	var wg sync.WaitGroup // 同期用のWaitGroupを用意
+
 	// clear
 	c.filterListsData = []*SnippetListData{}
 
+	// チャネルを用意して、処理結果を収集
+	resultChannel := make(chan struct {
+		platform string
+		data     *SnippetListData
+		err      error
+	}, len(c.lists))
+
+	// 各リストに対して並行処理を実行
 	for _, gc := range c.lists {
-		platformName := gc.GetPlatformName()
-		gc.SetFilterKey(platformName)
+		wg.Add(1)
+		go func(gc GitClient) {
+			defer wg.Done()
 
-		// append platform to platformList
-		platformList = append(platformList, platformName)
+			platformName := gc.GetPlatformName()
+			gc.SetFilterKey(platformName)
 
-		// append paltform to c.filterListsData
-		data := &SnippetListData{
-			Client:   gc,
-			Platform: platformName,
-		}
-
-		c.filterListsData = append(c.filterListsData, data)
-
-		// Get gitlab project list
-		glsnippet, ok := gc.(*GitlabClient)
-		if enableProject && ok {
-			projects, err := glsnippet.GetProjectList()
-			if err != nil {
-				return []string{}, err
+			data := &SnippetListData{
+				Client:   gc,
+				Platform: platformName,
 			}
 
-			for _, p := range projects {
-				// set platformName
-				pn := fmt.Sprintf("%s /%s", platformName, p.PathWithNamespace)
+			// Get gitlab project list
+			glsnippet, ok := gc.(*GitlabClient)
+			if enableProject && ok {
+				projects, err := glsnippet.GetProjectList()
+				if err != nil {
+					resultChannel <- struct {
+						platform string
+						data     *SnippetListData
+						err      error
+					}{platform: platformName, data: nil, err: err}
+					return
+				}
 
-				// set pd
-				pd := &SnippetListData{}
-				*pd = *data
-				pd.Platform = platformName
+				for _, p := range projects {
+					pn := fmt.Sprintf("%s /%s", platformName, p.PathWithNamespace)
 
-				// set pd.client
-				gls := &GitlabClient{}
-				*gls = *glsnippet
-				gls.Project = p
-				gls.SetFilterKey(pn)
-				pd.Client = gls
-
-				platformList = append(platformList, pn)
-				c.filterListsData = append(c.filterListsData, pd)
+					pd := &SnippetListData{
+						Client:   &GitlabClient{Project: p /* 他のフィールドを設定 */},
+						Platform: pn,
+					}
+					// 結果をチャネルに送信
+					resultChannel <- struct {
+						platform string
+						data     *SnippetListData
+						err      error
+					}{platform: pn, data: pd, err: nil}
+				}
+			} else {
+				// 結果をチャネルに送信
+				resultChannel <- struct {
+					platform string
+					data     *SnippetListData
+					err      error
+				}{platform: platformName, data: data, err: nil}
 			}
+		}(gc)
+	}
+
+	// 全てのgoroutineが終了するのを待機
+	go func() {
+		wg.Wait()
+		close(resultChannel) // チャネルを閉じる
+	}()
+
+	// 結果を受け取ってリストに追加
+	for result := range resultChannel {
+		if result.err != nil {
+			err = result.err
+		} else {
+			platformList = append(platformList, result.platform)
+			c.filterListsData = append(c.filterListsData, result.data)
 		}
 	}
-	return
+
+	if err != nil {
+		return nil, err
+	}
+	return platformList, nil
 }
 
 func (c *Client) VisibilityListFromPlatform(platform string) (visibilityList []Visibility) {

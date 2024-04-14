@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -14,10 +13,9 @@ import (
 
 // App
 var App = &cli.App{
-	Name:      "snipt",
-	Usage:     "multiple remote platform snippet manager.",
-	Version:   "0.1.3",
-	ErrWriter: ioutil.Discard,
+	Name:    "snipt",
+	Usage:   "multiple remote platform snippet manager.",
+	Version: "0.1.4",
 
 	// Flags
 	Flags: commonFlags,
@@ -45,6 +43,8 @@ var App = &cli.App{
 		// add subcommand
 
 		// comment subcommand
+
+		// copy subcommand
 	},
 
 	// Output usages and error messages

@@ -6,6 +6,7 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -22,6 +23,11 @@ type GitlabClient struct {
 	PlatformName string
 	FilterKey    string
 	Project      *gitlab.Project
+
+	// proxy
+	proxy     string
+	proxyUser string
+	proxyPass string
 }
 
 var (
@@ -35,27 +41,22 @@ func (g *GitlabClient) Init(u, token string) (err error) {
 	// create ctx
 	g.ctx = context.Background()
 
-	// TODO: proxyを設定できるように修正する(↓はテスト時のコードなので少し残しておく)
-	// Create http client
-	// h := &http.Client{
-	// 	Transport: &http.Transport{
-	// 		DialContext: (&net.Dialer{
-	// 			Timeout:   1000 * time.Millisecond,
-	// 			KeepAlive: 1000 * time.Millisecond,
-	// 		}).DialContext,
-	// 		TLSHandshakeTimeout:   300 * time.Millisecond,
-	// 		ResponseHeaderTimeout: 300 * time.Millisecond,
-	// 		ExpectContinueTimeout: 100 * time.Millisecond,
-	// 	},
-	// 	Timeout: 3000 * time.Millisecond,
-	// }
-	// proxyUrl, err := url.Parse("http://127.0.0.1:8080")
-	// h := &http.Client{
-	// 	Transport: &http.Transport{
-	// 		Proxy: http.ProxyURL(proxyUrl),
-	// 	},
-	// }
-	h := &http.Client{}
+	transport := &http.Transport{}
+	if g.proxy != "" {
+		proxyUrl, err := url.Parse(g.proxy)
+		if err != nil {
+			return err
+		}
+
+		hdr := make(http.Header)
+		hdr.Add("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(g.proxyUser+":"+g.proxyPass)))
+
+		transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		}
+	}
+
+	h := &http.Client{Transport: transport}
 
 	// Create Gitlab Client
 	g.client, err = gitlab.NewClient(token, gitlab.WithBaseURL(u), gitlab.WithHTTPClient(h))
@@ -81,50 +82,72 @@ func (g *GitlabClient) Init(u, token string) (err error) {
 
 // List
 func (g *GitlabClient) List(isFile, isSecret bool) (snippetList SnippetList, err error) {
-	// get snippetList
-	snippetDataList, _, err := g.client.Snippets.ListSnippets(&gitlab.ListSnippetsOptions{})
+	// set ListProjectsOptions pageSize
+	const pageSize = 50
 
-	// gitlab.Snippet to Interface
-	for _, snippet := range snippetDataList {
-		if !isSecret {
-			//
-			v := getGitlabVisibilityFromString(snippet.Visibility)
-			switch v {
-			case GitlabIsPrivate, GitlabIsInternal:
-				continue
+	opt := gitlab.ListSnippetsOptions(
+		gitlab.ListOptions{
+			Page:    0,
+			PerPage: pageSize,
+		},
+	)
+
+	for {
+		// get snippetList
+		snippetDataList, resp, ferr := g.client.Snippets.ListSnippets(&opt)
+
+		// check error
+		if ferr != nil {
+			return snippetList, ferr
+		}
+
+		for _, snippet := range snippetDataList {
+			if !isSecret {
+				//
+				v := getGitlabVisibilityFromString(snippet.Visibility)
+				switch v {
+				case GitlabIsPrivate, GitlabIsInternal:
+					continue
+				}
 			}
-		}
 
-		// get Description
-		title := replaceNewline(snippet.Title, "\\n")
+			// get Description
+			title := replaceNewline(snippet.Title, "\\n")
 
-		data := SnippetListData{
-			Client:     g,
-			Platform:   g.PlatformName,
-			Id:         strconv.Itoa(snippet.ID),
-			Title:      title,
-			URL:        snippet.WebURL,
-			Visibility: snippet.Visibility,
-		}
+			data := SnippetListData{
+				Client:     g,
+				Platform:   g.PlatformName,
+				Id:         strconv.Itoa(snippet.ID),
+				Title:      title,
+				URL:        snippet.WebURL,
+				Visibility: snippet.Visibility,
+			}
 
-		// check file flag
-		if isFile {
-			if len(snippet.Files) > 1 {
-				for _, f := range snippet.Files {
-					fd := data
-					fd.URL, _ = url.JoinPath(fd.URL, f.Path)
-					fd.RawURL = f.RawURL
+			// check file flag
+			if isFile {
+				if len(snippet.Files) > 1 {
+					for _, f := range snippet.Files {
+						fd := data
+						fd.URL, _ = url.JoinPath(fd.URL, f.Path)
+						fd.RawURL = f.RawURL
 
-					snippetList = append(snippetList, &fd)
+						snippetList = append(snippetList, &fd)
+					}
+				} else {
+					data.URL, _ = url.JoinPath(data.URL, snippet.FileName)
+					data.RawURL = snippet.RawURL
+					snippetList = append(snippetList, &data)
 				}
 			} else {
-				data.URL, _ = url.JoinPath(data.URL, snippet.FileName)
-				data.RawURL = snippet.RawURL
 				snippetList = append(snippetList, &data)
 			}
-		} else {
-			snippetList = append(snippetList, &data)
 		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opt.Page = resp.NextPage
 	}
 
 	return

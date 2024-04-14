@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"sort"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -97,6 +98,11 @@ func (g *GistClient) List(isFile, isSecret bool) (snippetList SnippetList, err e
 			snippetList = append(snippetList, &data)
 		}
 	}
+
+	sort.Slice(snippetList, func(i, j int) bool {
+		// i番目とj番目の要素のAgeを比較
+		return snippetList[i].URL < snippetList[j].URL
+	})
 
 	return snippetList, err
 }
