@@ -118,7 +118,7 @@ func cmdActionCreate(c *cli.Context) (err error) {
 		}
 
 		rawURL, eErr := cl.Create(t, snippetData)
-		if err != nil {
+		if eErr != nil {
 			return eErr
 		}
 
