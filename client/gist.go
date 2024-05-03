@@ -43,6 +43,9 @@ func (g *GistClient) Init(token string) (err error) {
 
 	// Get login user
 	user, _, err := g.client.Users.Get(g.ctx, "")
+	if err != nil {
+		return
+	}
 	g.User = *user.Login
 
 	// Generate PlatformName
