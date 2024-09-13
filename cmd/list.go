@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
 
 	// "github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
@@ -43,6 +44,11 @@ func cmdActionList(c *cli.Context) (err error) {
 
 	// Get List
 	list := cl.List(c.Bool("file"), c.Bool("secret"))
+
+	// Sort snippet list
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Title < list[j].Title
+	})
 
 	// Output list
 	for _, l := range list {

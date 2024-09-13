@@ -230,18 +230,18 @@ func (c *Client) PlatformList(enableProject bool) ([]string, error) {
 	}
 
 	// 全てのgoroutineが終了するのを待機
-	go func() {
-		wg.Wait()
-		close(resultChannel) // チャネルを閉じる
-	}()
+	wg.Wait()
+	close(resultChannel) // チャネルを閉じる
 
 	// 結果を受け取ってリストに追加
 	for result := range resultChannel {
 		if result.err != nil {
 			err = result.err
 		} else {
-			platformList = append(platformList, result.platform)
-			c.filterListsData = append(c.filterListsData, result.data)
+			if result.platform != "" {
+				platformList = append(platformList, result.platform)
+				c.filterListsData = append(c.filterListsData, result.data)
+			}
 		}
 	}
 

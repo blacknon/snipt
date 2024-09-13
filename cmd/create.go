@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/blacknon/snipt/client"
@@ -73,6 +74,11 @@ func cmdActionCreate(c *cli.Context) (err error) {
 	if err != nil {
 		return err
 	}
+
+	// sort platformList
+	sort.Slice(platformList, func(i, j int) bool {
+		return platformList[i] < platformList[j]
+	})
 
 	var filterText string
 	for _, p := range platformList {

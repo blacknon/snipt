@@ -15,7 +15,7 @@ import (
 var App = &cli.App{
 	Name:    "snipt",
 	Usage:   "multiple remote platform snippet manager.",
-	Version: "0.1.5",
+	Version: "0.1.6",
 
 	// Flags
 	Flags: commonFlags,

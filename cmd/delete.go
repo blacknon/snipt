@@ -7,6 +7,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/urfave/cli/v2"
@@ -33,6 +34,11 @@ func cmdActionDelete(c *cli.Context) (err error) {
 
 	// Get List
 	list := cl.List(false, c.Bool("secret"))
+
+	// Sort snippet list
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Title < list[j].Title
+	})
 
 	// Create list
 	var filterText string
